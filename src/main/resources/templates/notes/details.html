@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${note.title} + ' | Smart Notes AI'">Note details</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container py-4">
+    <div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <h1 class="display-6 fw-bold mb-2" th:text="${note.title}">Note title</h1>
+            <div class="d-flex gap-2 flex-wrap align-items-center mb-2">
+                <span class="badge text-bg-primary badge-soft" th:text="${note.category.name}">Category</span>
+                <span th:if="${note.tags == null or note.tags.isEmpty()}" class="text-muted small">No tags</span>
+                <span th:each="tag : ${note.tags}"
+                      class="badge text-bg-light border badge-soft"
+                      th:text="${tag.name}">
+                    tag
+                </span>
+            </div>
+            <p class="text-muted mb-0">
+                Created:
+                <span th:text="${#temporals.format(note.createdAt, 'dd MMM yyyy HH:mm')}">created</span>
+                |
+                Updated:
+                <span th:text="${#temporals.format(note.updatedAt, 'dd MMM yyyy HH:mm')}">updated</span>
+            </p>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-outline-secondary" th:href="@{|/notes/${note.id}/edit|}">Edit</a>
+            <form class="action-form" th:action="@{|/notes/${note.id}/delete|}" method="post"
+                  onsubmit="return confirm('Delete this note?');">
+                <button class="btn btn-outline-danger" type="submit">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card card-soft">
+                <div class="card-body">
+                    <h4 class="mb-3">Content</h4>
+                    <div class="note-content" th:text="${note.content}">Note content</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-soft mb-4">
+                <div class="card-body">
+                    <h4 class="mb-3">AI actions</h4>
+
+                    <div th:if="${!aiEnabled}" class="alert alert-warning small">
+                        <strong>AI is currently disabled.</strong><br>
+                        <span th:text="${aiHint}">Configure AI to enable these actions.</span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <form th:action="@{|/notes/${note.id}/ai/summary|}" method="post">
+                            <button class="btn btn-primary w-100" type="submit" th:disabled="${!aiEnabled}">Summarize note</button>
+                        </form>
+                        <form th:action="@{|/notes/${note.id}/ai/key-points|}" method="post">
+                            <button class="btn btn-outline-primary w-100" type="submit" th:disabled="${!aiEnabled}">Extract key points</button>
+                        </form>
+                        <form th:action="@{|/notes/${note.id}/ai/quiz|}" method="post">
+                            <button class="btn btn-outline-dark w-100" type="submit" th:disabled="${!aiEnabled}">Generate 3 quiz questions</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-soft" th:if="${aiTitle}">
+                <div class="card-body">
+                    <h4 class="mb-3" th:text="${aiTitle}">AI result</h4>
+
+                    <div th:if="${aiText}">
+                        <p class="mb-0 note-content" th:text="${aiText}">AI text result</p>
+                    </div>
+
+                    <ul class="ai-result-list mb-0" th:if="${aiItems}">
+                        <li th:each="item : ${aiItems}" th:text="${item}">Item</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a class="btn btn-link ps-0" th:href="@{/notes}">← Back to notes</a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

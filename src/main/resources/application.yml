@@ -1,0 +1,60 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: smart-notes-ai
+
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/smart_notes_ai}
+    username: ${SPRING_DATASOURCE_USERNAME:smartnotes}
+    password: ${SPRING_DATASOURCE_PASSWORD:smartnotes}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  thymeleaf:
+    cache: false
+
+  ai:
+    model:
+      chat: ${AI_PROVIDER:ollama}
+
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-4o-mini}
+          temperature: 0.2
+
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        options:
+          model: ${OLLAMA_MODEL:llama3.2}
+          temperature: 0.2
+      init:
+        pull-model-strategy: ${OLLAMA_PULL_STRATEGY:when_missing}
+        timeout: 15m
+        max-retries: 1
+
+logging:
+  level:
+    org.springframework.web: INFO
+    com.example.smartnotes: INFO
+
+app:
+  seed:
+    categories-and-tags: ${APP_SEED_CATEGORIES_AND_TAGS:true}

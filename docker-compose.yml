@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smart-notes-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-smart_notes_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-smartnotes}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smartnotes}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smartnotes} -d ${POSTGRES_DB:-smart_notes_ai}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: smart-notes-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  app:
+    build: .
+    container_name: smart-notes-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-smart_notes_ai}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-smartnotes}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-smartnotes}
+
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
+  ollama_data:
