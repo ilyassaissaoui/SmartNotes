@@ -13,4 +13,6 @@ public interface AiNoteAssistantService {
     List<String> extractKeyPoints(String content);
 
     List<String> generateQuizQuestions(String content);
+
+    List<String> generateQuizAnswers(String content, List<String> questions);
 }

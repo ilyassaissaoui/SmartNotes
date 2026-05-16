@@ -1,62 +1,57 @@
-# smart-notes-ai
+# Smart Notes AI
 
-A mini web application built with **Spring Boot + Thymeleaf + PostgreSQL + Spring AI**.
+A mini notes application built with **Spring Boot + PostgreSQL + Angular + Gemini API**.
 
-It is a normal notes application first, with a small useful AI layer on top.
+The app is still a normal notes app first. It now includes authentication, so every user must log in and can only access their own notes. The AI layer adds useful study features:
 
-## Features
-
-### Notes management
-- Create notes
-- Edit notes
-- Delete notes
-- View note details
-- Assign one category per note
-- Assign multiple tags per note
-- Search notes by title or content
-- Filter notes by category
-- Filter notes by tag
-
-### AI features
-For each note, you can:
-- Generate a concise summary
+- Generate a short summary from a note
 - Extract key points
-- Generate exactly 3 quiz questions
+- Generate 3 quiz questions
 
-### Small extras
-- Dashboard with total note count
-- Latest notes section
-- Sample seed data
-- Bootstrap-based UI
-- Friendly error handling
+The AI part is optimized for speed:
+
+- AI results are cached in PostgreSQL
+- Repeated clicks return cached results instantly when the note content did not change
+- The AI client is reused instead of rebuilt on every request
+- Very long notes are limited before being sent to the model
+- Angular disables AI buttons while a request is running
+
+---
 
 ## Tech stack
 
 ### Backend
+
 - Java 21
 - Spring Boot 3.5.x
 - Spring Web
 - Spring Data JPA
 - Spring Validation
-- Spring Boot DevTools
-- Lombok
+- Spring Security
+- Spring AI
 - PostgreSQL
 - Maven
 
-### AI
-- Spring AI
-- Configurable provider:
-  - OpenAI
-  - Ollama
-
 ### Frontend
-- Thymeleaf
-- Bootstrap 5
 
-### Docker
-- Dockerfile
-- docker-compose.yml
-- optional docker-compose.ollama.yml
+- Angular 18
+- Nginx for Docker production serving
+- Relative `/api` calls proxied to the Spring Boot backend
+
+### AI provider
+
+Recommended configuration uses **Gemini through the OpenAI-compatible endpoint**. If `.env` is missing or the key is still a placeholder, login/register still works and only the AI buttons stay disabled:
+
+```env
+AI_PROVIDER=openai
+OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+SPRING_AI_OPENAI_CHAT_COMPLETIONS_PATH=/chat/completions
+OPENAI_MODEL=gemini-2.5-flash-lite
+OPENAI_API_KEY=YOUR_GEMINI_API_KEY
+AI_MAX_INPUT_CHARACTERS=4500
+```
+
+The variable names still say `OPENAI_` because Spring AI uses the OpenAI-compatible client. The API key value should be your Gemini API key.
 
 ---
 
@@ -64,219 +59,178 @@ For each note, you can:
 
 ```text
 smart-notes-ai/
-├── Dockerfile
-├── docker-compose.yml
-├── docker-compose.ollama.yml
+├── Dockerfile                    # Spring Boot backend Dockerfile
+├── docker-compose.yml            # PostgreSQL + backend + Angular frontend
+├── frontend/                     # Angular frontend
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   ├── package.json
+│   └── src/app/
 ├── pom.xml
-├── README.md
 ├── .env.example
-└── src
-    └── main
-        ├── java/com/example/smartnotes
-        │   ├── SmartNotesApplication.java
-        │   ├── config/
-        │   ├── controller/
-        │   ├── dto/
-        │   ├── exception/
-        │   ├── model/
-        │   ├── repository/
-        │   └── service/
-        └── resources
-            ├── application.yml
-            ├── static/css/app.css
-            └── templates/
-```
-
-## Database model
-
-### Category
-- id
-- name
-
-### Tag
-- id
-- name
-
-### Note
-- id
-- title
-- content
-- category
-- tags
-- createdAt
-- updatedAt
-
-Relationships:
-- One category -> many notes
-- Many tags <-> many notes
-
----
-
-## Run locally
-
-### 1) Start PostgreSQL
-You can use your own PostgreSQL instance, or Docker:
-
-```bash
-docker run --name smart-notes-db   -e POSTGRES_DB=smart_notes_ai   -e POSTGRES_USER=smartnotes   -e POSTGRES_PASSWORD=smartnotes   -p 5432:5432   -d postgres:16-alpine
-```
-
-### 2) Configure environment variables
-
-Windows PowerShell:
-```powershell
-$env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/smart_notes_ai"
-$env:SPRING_DATASOURCE_USERNAME="smartnotes"
-$env:SPRING_DATASOURCE_PASSWORD="smartnotes"
-
-$env:AI_PROVIDER="none"
-# or "openai" or "ollama"
-
-$env:OPENAI_API_KEY="your-key"
-$env:OPENAI_MODEL="gpt-4o-mini"
-
-$env:OLLAMA_BASE_URL="http://localhost:11434"
-$env:OLLAMA_MODEL="llama3.2"
-```
-
-Linux/macOS:
-```bash
-export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/smart_notes_ai
-export SPRING_DATASOURCE_USERNAME=smartnotes
-export SPRING_DATASOURCE_PASSWORD=smartnotes
-
-export AI_PROVIDER=none
-# or openai or ollama
-
-export OPENAI_API_KEY=your-key
-export OPENAI_MODEL=gpt-4o-mini
-
-export OLLAMA_BASE_URL=http://localhost:11434
-export OLLAMA_MODEL=llama3.2
-```
-
-### 3) Run the app
-```bash
-mvn spring-boot:run
-```
-
-Open:
-```text
-http://localhost:8080
+└── src/main/
+    ├── java/com/example/smartnotes/
+    │   ├── controller/           # Thymeleaf controllers still kept
+    │   ├── controller/api/       # REST API used by Angular
+    │   ├── dto/api/              # REST API DTOs
+    │   ├── model/
+    │   ├── repository/
+    │   └── service/
+    └── resources/
+        ├── application.yml
+        ├── static/
+        └── templates/            # Old Thymeleaf UI kept for backup
 ```
 
 ---
 
 ## Run with Docker Compose
 
-### Standard app + PostgreSQL
+### 1) Create your `.env`
+
+Copy the example file:
+
 ```bash
-docker compose up --build
+cp .env.example .env
 ```
 
-### App + PostgreSQL + Ollama
-```bash
-docker compose -f docker-compose.yml -f docker-compose.ollama.yml up --build
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-Open:
+Then edit `.env` and put your Gemini API key:
+
+```env
+OPENAI_API_KEY=YOUR_REAL_GEMINI_API_KEY
+```
+
+Also change the JWT secret for real deployments:
+
+```env
+APP_JWT_SECRET=replace-this-with-a-long-random-secret-value
+APP_JWT_EXPIRATION_HOURS=24
+```
+
+### 2) Start everything
+
+```bash
+docker compose up --build -d
+```
+
+Open the Angular frontend and create an account from the Register tab:
+
+```text
+http://localhost:4200
+```
+
+Backend health check:
+
+```text
+http://localhost:8080/api/health
+```
+
+Backend API requires login:
+
+```text
+http://localhost:8080/api/notes
+```
+
+The old Thymeleaf templates are still in the project, but the Angular UI is now the recommended frontend because it includes login/register/logout screens.
+
+---
+
+## Run locally without Docker frontend
+
+Start PostgreSQL and Spring Boot first, then run Angular:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Angular opens on:
+
+```text
+http://localhost:4200
+```
+
+The Angular dev server uses `proxy.conf.json`, so `/api` is forwarded to:
+
 ```text
 http://localhost:8080
 ```
 
+
+## If Register does not work
+
+First check that the backend container is running:
+
+```bash
+docker compose ps
+docker logs smart-notes-app --tail=120
+```
+
+Also test the backend health URL in the browser:
+
+```text
+http://localhost:8080/api/health
+```
+
+If the frontend shows that the backend is not ready, the problem is not the Angular form. It means the Spring Boot container failed to start or is still restarting.
+
 ---
 
-## AI configuration
+## REST API used by Angular
 
-### Disable AI
-```bash
-AI_PROVIDER=none
+```text
+POST   /api/auth/register
+POST   /api/auth/login
+GET    /api/auth/me
+GET    /api/dashboard
+GET    /api/ai/status
+GET    /api/categories
+GET    /api/tags
+GET    /api/notes
+GET    /api/notes/{id}
+POST   /api/notes
+PUT    /api/notes/{id}
+DELETE /api/notes/{id}
+POST   /api/notes/{id}/ai/summary
+POST   /api/notes/{id}/ai/key-points
+POST   /api/notes/{id}/ai/quiz
 ```
 
-### Use OpenAI
+---
+
+## Optional: use local Ollama instead
+
+Ollama is now optional and placed behind a Docker Compose profile so Gemini does not wait for it.
+
 ```bash
-AI_PROVIDER=openai
-OPENAI_API_KEY=your-key
-OPENAI_MODEL=gpt-4o-mini
+docker compose --profile local-ai up --build -d
 ```
 
-### Use Ollama
-Make sure Ollama is running locally and the model exists:
-```bash
-ollama pull llama3.2
-```
+Then use:
 
-Then:
-```bash
+```env
 AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2
+OLLAMA_BASE_URL=http://ollama:11434
+OLLAMA_MODEL=llama3.2:1b
 ```
 
 ---
 
-## Seed data
+## Notes about authentication
 
-The app starts with:
-- Categories: Study, Work, Personal, Ideas
-- Tags: java, spring, exam, project, productivity, summary
-- 3 sample notes
+- Passwords are stored with BCrypt hashes, not plain text.
+- The backend returns a signed Bearer token after login/register.
+- Angular stores the token in `localStorage` and sends it in the `Authorization` header.
+- Every note query is filtered by the authenticated user.
+- Accessing another user's note ID returns `404`, so note ownership is not leaked.
 
----
+## Notes about speed
 
-## Pages
-
-- `/` dashboard
-- `/notes` notes list + search/filter
-- `/notes/new` create note
-- `/notes/{id}` note details
-- `/notes/{id}/edit` edit note
-
-AI actions on note details page:
-- `POST /notes/{id}/ai/summary`
-- `POST /notes/{id}/ai/key-points`
-- `POST /notes/{id}/ai/quiz`
-
----
-
-## Validation rules
-
-- Title: required, 3 to 150 characters
-- Content: required, minimum 10 characters
-- Category: required
-- Tags: optional
-
----
-
-## Screenshots placeholders
-
-Add screenshots here later:
-
-- `docs/screenshots/dashboard.png`
-- `docs/screenshots/notes-list.png`
-- `docs/screenshots/note-details.png`
-
----
-
-## Future improvements
-
-- Pagination
-- User authentication
-- Rich text editor
-- AI-generated tag suggestions
-- Export notes to PDF
-- Vector search / semantic note search
-- Note sharing
-- Unit and integration tests
-
----
-
-## Notes
-
-- The app is designed to stay beginner-friendly.
-- AI errors are shown as friendly messages in the UI.
-- If AI is not configured, CRUD still works normally.
-
-## License
-
-Student/demo project.
+The first AI request can still take more time than cached requests because it must contact Gemini. After one successful AI action for a note, clicking the same action again returns the cached result instantly unless the note content changes.

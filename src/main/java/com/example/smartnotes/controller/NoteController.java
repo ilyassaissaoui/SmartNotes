@@ -131,7 +131,7 @@ public class NoteController {
             Note note = noteService.getNoteById(id);
             prepareDetailsModel(note, model);
             model.addAttribute("aiTitle", "Summary");
-            model.addAttribute("aiText", aiNoteAssistantService.summarizeNote(note.getContent()));
+            model.addAttribute("aiText", noteService.summarizeNote(id).getText());
             return "notes/details";
         } catch (AiFeatureException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
@@ -145,7 +145,7 @@ public class NoteController {
             Note note = noteService.getNoteById(id);
             prepareDetailsModel(note, model);
             model.addAttribute("aiTitle", "Key points");
-            model.addAttribute("aiItems", aiNoteAssistantService.extractKeyPoints(note.getContent()));
+            model.addAttribute("aiItems", noteService.extractKeyPoints(id).getItems());
             return "notes/details";
         } catch (AiFeatureException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
@@ -158,7 +158,7 @@ public class NoteController {
         try {
             Note note = noteService.getNoteById(id);
             prepareDetailsModel(note, model);
-            List<String> questions = aiNoteAssistantService.generateQuizQuestions(note.getContent());
+            List<String> questions = noteService.generateQuizQuestions(id).getItems();
             model.addAttribute("aiTitle", "Quiz questions");
             model.addAttribute("aiItems", questions);
             return "notes/details";

@@ -29,21 +29,26 @@ spring:
 
   ai:
     model:
-      chat: ${AI_PROVIDER:ollama}
+      chat: ${AI_PROVIDER:openai}
+      # We use Gemini through the OpenAI-compatible chat API.
+      # Disable embedding auto-configuration so Spring AI does not try to start Ollama.
+      embedding: ${AI_EMBEDDING_PROVIDER:none}
 
     openai:
-      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
-      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
+      api-key: ${OPENAI_API_KEY:not-configured}
       chat:
+        completions-path: ${SPRING_AI_OPENAI_CHAT_COMPLETIONS_PATH:/chat/completions}
         options:
-          model: ${OPENAI_MODEL:gpt-4o-mini}
+          model: ${OPENAI_MODEL:gemini-2.5-flash-lite}
           temperature: 0.2
+          max-tokens: ${OPENAI_MAX_TOKENS:512}
 
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
         options:
-          model: ${OLLAMA_MODEL:llama3.2}
+          model: ${OLLAMA_MODEL:llama3.2:1b}
           temperature: 0.2
       init:
         pull-model-strategy: ${OLLAMA_PULL_STRATEGY:when_missing}
@@ -58,3 +63,6 @@ logging:
 app:
   seed:
     categories-and-tags: ${APP_SEED_CATEGORIES_AND_TAGS:true}
+  security:
+    jwt-secret: ${APP_JWT_SECRET:change-this-dev-secret-please-32-chars-min}
+    jwt-expiration-hours: ${APP_JWT_EXPIRATION_HOURS:24}

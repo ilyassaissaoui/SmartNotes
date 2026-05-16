@@ -1,5 +1,6 @@
 package com.example.smartnotes.repository;
 
+import com.example.smartnotes.model.AppUser;
 import com.example.smartnotes.model.Note;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,22 +13,22 @@ import java.util.Optional;
 
 public interface NoteRepository extends JpaRepository<Note, Long> {
 
-    @Override
     @EntityGraph(attributePaths = {"category", "tags"})
-    List<Note> findAll();
-
-    @Override
-    @EntityGraph(attributePaths = {"category", "tags"})
-    Optional<Note> findById(Long id);
+    List<Note> findByOwnerOrderByUpdatedAtDesc(AppUser owner);
 
     @EntityGraph(attributePaths = {"category", "tags"})
-    List<Note> findTop5ByOrderByUpdatedAtDesc();
+    Optional<Note> findByIdAndOwner(Long id, AppUser owner);
+
+    long countByOwner(AppUser owner);
+
+    @EntityGraph(attributePaths = {"category", "tags"})
+    List<Note> findTop5ByOwnerOrderByUpdatedAtDesc(AppUser owner);
 
     @Query("""
             select distinct n
             from Note n
-            where
-                (:query is null or
+            where n.owner = :owner
+            and (:query is null or
                  lower(n.title) like lower(concat('%', :query, '%')) or
                  lower(n.content) like lower(concat('%', :query, '%')))
             and (:categoryId is null or n.category.id = :categoryId)
@@ -37,9 +38,10 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             order by n.updatedAt desc
             """)
     @EntityGraph(attributePaths = {"category", "tags"})
-    List<Note> search(@Param("query") String query,
-                      @Param("categoryId") Long categoryId,
-                      @Param("tagId") Long tagId);
+    List<Note> searchByOwner(@Param("owner") AppUser owner,
+                             @Param("query") String query,
+                             @Param("categoryId") Long categoryId,
+                             @Param("tagId") Long tagId);
 
     @Modifying
     @Query(value = "delete from note_tags where note_id = :noteId", nativeQuery = true)
